@@ -174,31 +174,21 @@ function updateYearDetail(year) {
   if (!calcCache) return;
 
   const {
-    monthlyLoan, downPaymentYen, initialCostYen,
-    mgmtYen, propTaxYen, sellCostRate,
-    assetValues, balances, cumRentByYear,
-    crossoverYear,
+    sellCostRate,
+    assetValues, balances, cumRentByYear, buyNetValues,
   } = calcCache;
 
   $('sellYearVal').textContent = year;
 
-  const assetVal  = assetValues[year];
-  const balance   = balances[year];
-  const sellCost  = assetVal * sellCostRate / 100;
-  const sellGain  = assetVal - balance - sellCost; // 純売却益（残債を返済後に手元に残るか）
+  const assetVal = assetValues[year];
+  const balance  = balances[year];
+  const sellCost = assetVal * sellCostRate / 100;
+  const sellGain = assetVal - balance - sellCost;
 
-  // 購入の実質月々コスト
-  // 総支払い = 頭金 + 初期費用 + ローン返済累計 + 管理費累計 + 固定資産税累計 + 売却費用
-  // 総回収   = 売却価格（資産価値）
-  const totalOut     = downPaymentYen + initialCostYen
-    + monthlyLoan * year * 12
-    + mgmtYen * 12 * year
-    + propTaxYen * year
-    + sellCost;
-  const netCost      = totalOut - assetVal;
-  const buyMonthly   = netCost / (year * 12);
-  const rentMonthly  = cumRentByYear[year] / (year * 12);
-  const diff         = buyMonthly - rentMonthly;
+  // 購入の実質損益を月数で割る（チャートのY値と同じ定義）
+  const buyMonthly  = buyNetValues[year] / (year * 12);
+  // 賃貸の月々平均コスト（正値＝支出）
+  const rentMonthly = cumRentByYear[year] / (year * 12);
 
   // 売却結果
   $('dAssetValue').textContent = fmt(assetVal);
@@ -206,23 +196,27 @@ function updateYearDetail(year) {
   $('dSellCost').textContent   = fmt(sellCost);
 
   const gainEl = $('dSellGain');
-  gainEl.textContent  = fmt(sellGain);
-  gainEl.className    = sellGain >= 0 ? 'pos' : 'neg';
+  gainEl.textContent = fmt(sellGain);
+  gainEl.className   = sellGain >= 0 ? 'pos' : 'neg';
 
-  // 月々コスト
-  $('dBuyCost').textContent  = fmt(buyMonthly);
+  // 月々損益表示（購入はプラス=得、マイナス=損）
+  const buyEl = $('dBuyCost');
+  buyEl.textContent = fmt(buyMonthly);
+  buyEl.className   = buyMonthly >= 0 ? 'pos' : 'neg';
   $('dRentCost').textContent = fmt(rentMonthly);
 
-  // 判定
+  // 判定：購入の月割り損益 + 賃貸の月々コスト > 0 なら購入が有利
+  // （賃貸払いを免れた分 + 資産増減が、購入コストを上回るかどうか）
+  const advantage = buyMonthly + rentMonthly;
   const verdictEl = $('dVerdict');
-  if (Math.abs(diff) < 500) {
-    verdictEl.textContent = `ほぼ同等（差: ${fmt(Math.abs(diff))}）`;
+  if (Math.abs(advantage) < 500) {
+    verdictEl.textContent = `ほぼ同等（差: ${fmt(Math.abs(advantage))}）`;
     verdictEl.className   = 'verdict even';
-  } else if (diff < 0) {
-    verdictEl.textContent = `購入の方が月々 ${fmt(Math.abs(diff))} お得`;
+  } else if (advantage > 0) {
+    verdictEl.textContent = `購入の方が月々 ${fmt(advantage)} 有利`;
     verdictEl.className   = 'verdict buy-wins';
   } else {
-    verdictEl.textContent = `賃貸の方が月々 ${fmt(diff)} お得`;
+    verdictEl.textContent = `賃貸の方が月々 ${fmt(Math.abs(advantage))} 有利`;
     verdictEl.className   = 'verdict rent-wins';
   }
 
