@@ -3,28 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>賃貸 vs 購入シミュレーター | 損益分岐点を無料計算</title>
-  <meta name="description" content="住宅の賃貸と購入、どちらがお得？条件を入力するだけで損益分岐点・月々コスト比較をかんたんに計算できる無料シミュレーターです。">
+  <title>住宅購入シミュレーター | 月々コスト・賃貸比較</title>
+  <meta name="description" content="住宅ローンの月々返済額・利息総額を計算し、賃貸との損益分岐点・実質コスト比較ができる無料シミュレーターです。">
   <link rel="stylesheet" href="style.css">
-
   <!-- Google AdSense（承認後にコメントを外してください） -->
   <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
   <header class="site-header">
     <div class="header-inner">
-      <h1>賃貸 vs 購入シミュレーター</h1>
-      <p class="header-sub">条件を入力するだけで損益分岐点・月々コストを自動計算</p>
+      <h1>住宅購入シミュレーター</h1>
+      <p class="header-sub">月々の返済額・利息総額を計算し、賃貸との実質コストを比較</p>
     </div>
-    <!-- AdSense: ヘッダー下 -->
     <div class="ad-slot ad-header">
+      <!-- AdSense: ヘッダー下 -->
       <!--
       <ins class="adsbygoogle" style="display:block"
-           data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-           data-ad-slot="XXXXXXXXXX"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"
            data-ad-format="auto" data-full-width-responsive="true"></ins>
       <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
       -->
@@ -34,13 +31,13 @@
 
   <div class="layout">
 
-    <!-- 入力パネル -->
+    <!-- ── サイドバー ────────────────────────── -->
     <aside class="sidebar">
       <button class="sidebar-toggle" id="sidebarToggle">条件を入力 ▼</button>
       <div class="sidebar-body" id="sidebarBody">
 
         <section class="input-group">
-          <h2>購入条件</h2>
+          <h2>ローン条件</h2>
           <div class="field">
             <label for="propertyPrice">物件価格（万円）</label>
             <input type="number" id="propertyPrice" min="100" max="100000" value="5000" step="100">
@@ -55,7 +52,7 @@
             <input type="number" id="annualRate" min="0" max="10" value="1.5" step="0.05">
           </div>
           <div class="field">
-            <label for="loanYears">返済期間（年）<span class="range-val" id="loanYearsVal">35</span></label>
+            <label for="loanYears">返済期間（年）<span class="range-val" id="loanYearsVal">35</span>年</label>
             <input type="range" id="loanYears" min="5" max="50" value="35" step="1">
           </div>
         </section>
@@ -64,65 +61,57 @@
           <h2>購入コスト</h2>
           <div class="field">
             <label for="initialCostRate">
-              初期費用率（%）
-              <span class="tip" title="登記費用・仲介手数料・火災保険等。物件価格の5〜8%程度">?</span>
+              初期費用率（%）<span class="tip" title="登記費用・仲介手数料・火災保険等。物件価格の5〜8%程度">?</span>
             </label>
             <input type="number" id="initialCostRate" min="0" max="20" value="6.0" step="0.5">
           </div>
           <div class="field">
             <label for="monthlyMgmt">
-              月額管理費（万円）
-              <span class="tip" title="マンションの管理費・修繕積立金等">?</span>
+              月額管理費（万円）<span class="tip" title="マンションの管理費・修繕積立金等">?</span>
             </label>
             <input type="number" id="monthlyMgmt" min="0" max="10" value="2.0" step="0.5">
           </div>
           <div class="field">
             <label for="propertyTax">
-              固定資産税（年額・万円）
-              <span class="tip" title="固定資産税・都市計画税の年間目安">?</span>
+              固定資産税（年額・万円）<span class="tip" title="固定資産税・都市計画税の年間目安">?</span>
             </label>
             <input type="number" id="propertyTax" min="0" max="100" value="10" step="1">
           </div>
           <div class="field">
             <label for="sellCostRate">
-              売却費用率（%）
-              <span class="tip" title="仲介手数料・印紙税・登記費用等。売却価格の3.5〜4.5%程度">?</span>
+              売却費用率（%）<span class="tip" title="仲介手数料・印紙税・登記費用等。売却価格の3.5〜4.5%程度">?</span>
             </label>
             <input type="number" id="sellCostRate" min="0" max="10" value="4.0" step="0.5">
           </div>
           <div class="field">
             <label for="assetRate">
-              資産価値の年間騰落率（%）
-              <span class="tip" title="プラスで値上がり、マイナスで値下がり。0%なら変動なし">?</span>
+              資産価値の年間騰落率（%）<span class="tip" title="プラスで値上がり、マイナスで値下がり。0%で変動なし">?</span>
             </label>
             <input type="number" id="assetRate" min="-10" max="10" value="0.0" step="0.1">
           </div>
         </section>
 
         <section class="input-group">
-          <h2>賃貸条件</h2>
+          <h2>賃貸条件（比較用）</h2>
           <div class="field">
             <label for="monthlyRent">月額賃料（万円）</label>
             <input type="number" id="monthlyRent" min="1" max="100" value="15" step="1">
           </div>
           <div class="field">
             <label for="rentIncreaseRate">
-              家賃年間上昇率（%）
-              <span class="tip" title="毎年の家賃値上げ率。0%なら固定">?</span>
+              家賃年間上昇率（%）<span class="tip" title="毎年の家賃値上げ率">?</span>
             </label>
             <input type="number" id="rentIncreaseRate" min="0" max="10" value="0.0" step="0.5">
           </div>
           <div class="field">
             <label for="renewalMonths">
-              更新料（ヶ月分）
-              <span class="tip" title="契約更新時に発生する費用">?</span>
+              更新料（ヶ月分）<span class="tip" title="契約更新時に発生する費用">?</span>
             </label>
             <input type="number" id="renewalMonths" min="0" max="6" value="1.0" step="0.5">
           </div>
           <div class="field">
             <label for="renewalInterval">
-              更新間隔（年）
-              <span class="tip" title="賃貸契約の更新頻度">?</span>
+              更新間隔（年）<span class="tip" title="賃貸契約の更新頻度">?</span>
             </label>
             <input type="number" id="renewalInterval" min="1" max="5" value="2" step="1">
           </div>
@@ -131,38 +120,46 @@
       </div>
     </aside>
 
-    <!-- メインコンテンツ -->
+    <!-- ── メインコンテンツ ──────────────────── -->
     <main class="main">
 
-      <!-- 警告 -->
       <div class="alert" id="zeroAlert" style="display:none">
         借入額が0円です。物件価格と頭金を確認してください。
       </div>
 
-      <!-- 損益分岐点 ヒーローカード -->
-      <div class="hero-card" id="heroCard">
-        <div class="hero-label">損益分岐点</div>
-        <div class="hero-value" id="heroCrossover">—</div>
-        <div class="hero-sub" id="heroSub"></div>
-      </div>
-
-      <!-- 月々コスト比較 -->
+      <!-- ① 月々の支払い ─────────────────────── -->
       <section class="card">
-        <h2 class="card-title">月々コスト比較</h2>
-        <div class="cost-compare">
-          <div class="cost-col cost-buy">
-            <div class="cost-head">購入</div>
-            <div class="cost-row"><span>ローン返済</span><strong id="cLoan">—</strong></div>
-            <div class="cost-row"><span>管理費</span><strong id="cMgmt">—</strong></div>
-            <div class="cost-row"><span>固定資産税（月割）</span><strong id="cTax">—</strong></div>
-            <div class="cost-row total"><span>月々合計</span><strong id="cBuyTotal">—</strong></div>
+        <h2 class="card-title">月々の支払い</h2>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">ローン返済</div>
+            <div class="kpi-value" id="kpiLoan">—</div>
           </div>
-          <div class="cost-vs">VS</div>
-          <div class="cost-col cost-rent">
-            <div class="cost-head">賃貸</div>
-            <div class="cost-row"><span>月額賃料</span><strong id="cRent">—</strong></div>
-            <div class="cost-row"><span>更新料（月割換算）</span><strong id="cRenewal">—</strong></div>
-            <div class="cost-row total"><span>月々合計</span><strong id="cRentTotal">—</strong></div>
+          <div class="kpi-card">
+            <div class="kpi-label">管理費</div>
+            <div class="kpi-value" id="kpiMgmt">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">固定資産税（月割）</div>
+            <div class="kpi-value" id="kpiTax">—</div>
+          </div>
+          <div class="kpi-card highlight">
+            <div class="kpi-label">月々合計</div>
+            <div class="kpi-value" id="kpiMonthlyTotal">—</div>
+          </div>
+        </div>
+        <div class="loan-summary">
+          <div class="summary-item">
+            <span class="summary-label">借入額</span>
+            <span class="summary-value" id="summaryPrincipal">—</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">利息総額</span>
+            <span class="summary-value" id="summaryInterest">—</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">総返済額</span>
+            <span class="summary-value" id="summaryTotal">—</span>
           </div>
         </div>
       </section>
@@ -171,48 +168,58 @@
       <div class="ad-slot">
         <!--
         <ins class="adsbygoogle" style="display:block"
-             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-             data-ad-slot="XXXXXXXXXX"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"
              data-ad-format="auto" data-full-width-responsive="true"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
         -->
         <span class="ad-label">Ad</span>
       </div>
 
-      <!-- 損益推移グラフ -->
+      <!-- ② 賃貸との比較チャート ────────────────── -->
       <section class="card">
-        <h2 class="card-title">累積コスト推移</h2>
+        <h2 class="card-title">購入 vs 賃貸の累積コスト比較</h2>
         <p class="card-desc" id="chartDesc"></p>
+        <div class="crossover-badge" id="crossoverBadge">
+          <span class="cb-label">損益分岐点</span>
+          <span class="cb-value" id="crossoverVal">—</span>
+        </div>
         <div class="chart-wrap">
           <canvas id="mainChart"></canvas>
         </div>
+        <p class="chart-note">
+          購入実質損益 ＝ 資産価値 − 物件価格 − 初期費用 − 累積利息 − 累積管理費 − 累積固定資産税 − 売却費用<br>
+          賃貸累積支出はマイナス値で表示。グラフが交差した年が損益分岐点。
+        </p>
       </section>
 
       <!-- AdSense -->
       <div class="ad-slot">
         <!--
         <ins class="adsbygoogle" style="display:block"
-             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-             data-ad-slot="XXXXXXXXXX"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"
              data-ad-format="auto" data-full-width-responsive="true"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
         -->
         <span class="ad-label">Ad</span>
       </div>
 
-      <!-- 年別内訳テーブル -->
+      <!-- ③ 売却年別・実質月々コスト比較 ─────────── -->
       <section class="card">
-        <h2 class="card-title">年別コスト内訳</h2>
+        <h2 class="card-title">売却年別の実質月々コスト比較</h2>
+        <p class="card-desc">
+          「X年後に売却した場合」を想定した、購入と賃貸それぞれの実質的な月々コストを比較します。<br>
+          購入の実質月々コスト ＝ （総支払額 − 売却価格）÷ 居住月数
+        </p>
         <div class="table-scroll">
-          <table class="data-table" id="yearTable">
+          <table class="data-table" id="costTable">
             <thead>
               <tr>
-                <th>経過年</th>
+                <th>売却年</th>
+                <th>購入<br><small>実質月々コスト</small></th>
+                <th>賃貸<br><small>月々平均コスト</small></th>
+                <th>差<br><small>購入−賃貸</small></th>
                 <th>資産価値</th>
                 <th>残債</th>
-                <th>購入実質損益<br><small>売却想定</small></th>
-                <th>賃貸累積支出</th>
-                <th>差（購入−賃貸）</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -224,7 +231,7 @@
   </div>
 
   <footer class="site-footer">
-    <p>※本シミュレーターは参考値です。実際の条件は金融機関・不動産会社にご確認ください。</p>
+    <p>※本シミュレーターは参考値です。実際のローン条件・税制については金融機関・税務署にご確認ください。</p>
   </footer>
 
   <script src="app.js"></script>

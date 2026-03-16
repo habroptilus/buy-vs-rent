@@ -21,98 +21,95 @@ function calcMonthlyPayment(principal, annualRate, months) {
   return principal * r * pow / (pow - 1);
 }
 
-// ── 年末残高テーブル（年次のみ）──────────────────────────────
-function buildYearlyBalances(principal, annualRate, loanYears) {
-  const balances = [principal];
-  const monthly = calcMonthlyPayment(principal, annualRate, loanYears * 12);
+// ── 月次返済スケジュールを年次サマリーに変換 ─────────────────
+// 戻り値: 配列[y] = { balance, cumInterest } (y=0..loanYears)
+function buildYearlyData(principal, annualRate, loanYears) {
+  const result = [{ balance: principal, cumInterest: 0 }];
 
   if (annualRate === 0) {
-    const repayPerMonth = principal / (loanYears * 12);
+    const monthly = principal / (loanYears * 12);
+    let bal = principal;
     for (let y = 1; y <= loanYears; y++) {
-      balances.push(Math.max(principal - repayPerMonth * y * 12, 0));
+      bal = Math.max(bal - monthly * 12, 0);
+      result.push({ balance: bal, cumInterest: 0 });
     }
   } else {
     const r = annualRate / 12 / 100;
+    const monthly = calcMonthlyPayment(principal, annualRate, loanYears * 12);
     let bal = principal;
+    let cumInterest = 0;
     for (let y = 1; y <= loanYears; y++) {
       for (let m = 0; m < 12; m++) {
         const interest = bal * r;
+        cumInterest += interest;
         bal = Math.max(bal - (monthly - interest), 0);
       }
-      balances.push(bal);
+      result.push({ balance: bal, cumInterest });
     }
   }
-  return balances; // length = loanYears + 1
+  return result;
 }
 
 // ── メイン計算 ───────────────────────────────────────────────
 function update() {
-  // 入力値
-  const propertyPriceMan  = parseFloat($('propertyPrice').value)   || 5000;
-  const downPaymentMan    = parseFloat($('downPayment').value)     || 0;
-  const annualRate        = parseFloat($('annualRate').value)      || 0;
-  const loanYears         = parseInt($('loanYears').value)         || 35;
+  // 入力値取得
+  const propertyPriceMan = parseFloat($('propertyPrice').value)    || 5000;
+  const downPaymentMan   = parseFloat($('downPayment').value)      || 0;
+  const annualRate       = parseFloat($('annualRate').value)       || 0;
+  const loanYears        = parseInt($('loanYears').value)          || 35;
 
-  const initialCostRate   = parseFloat($('initialCostRate').value) || 6;
-  const monthlyMgmtMan    = parseFloat($('monthlyMgmt').value)     || 0;
-  const propertyTaxMan    = parseFloat($('propertyTax').value)     || 0;
-  const sellCostRate      = parseFloat($('sellCostRate').value)    || 4;
-  const assetRate         = parseFloat($('assetRate').value)       || 0;
+  const initialCostRate  = parseFloat($('initialCostRate').value)  || 6;
+  const monthlyMgmtMan   = parseFloat($('monthlyMgmt').value)      || 0;
+  const propertyTaxMan   = parseFloat($('propertyTax').value)      || 0;
+  const sellCostRate     = parseFloat($('sellCostRate').value)     || 4;
+  const assetRate        = parseFloat($('assetRate').value)        || 0;
 
-  const monthlyRentMan    = parseFloat($('monthlyRent').value)     || 15;
-  const rentIncreaseRate  = parseFloat($('rentIncreaseRate').value)|| 0;
-  const renewalMonths     = parseFloat($('renewalMonths').value)   || 1;
-  const renewalInterval   = parseInt($('renewalInterval').value)   || 2;
+  const monthlyRentMan   = parseFloat($('monthlyRent').value)      || 15;
+  const rentIncreaseRate = parseFloat($('rentIncreaseRate').value) || 0;
+  const renewalMonths    = parseFloat($('renewalMonths').value)    || 1;
+  const renewalInterval  = parseInt($('renewalInterval').value)    || 2;
 
-  // 派生（円換算）
-  const principalMan    = Math.max(propertyPriceMan - downPaymentMan, 0);
-  const principal       = principalMan * 10000;
-  const propertyYen     = propertyPriceMan * 10000;
-  const mgmtYen         = monthlyMgmtMan * 10000;
-  const propTaxYen      = propertyTaxMan * 10000;
-  const initialCostYen  = propertyYen * initialCostRate / 100;
-  const months          = loanYears * 12;
+  // 派生値（円）
+  const principalMan   = Math.max(propertyPriceMan - downPaymentMan, 0);
+  const principal      = principalMan * 10000;
+  const propertyYen    = propertyPriceMan * 10000;
+  const mgmtYen        = monthlyMgmtMan * 10000;
+  const propTaxYen     = propertyTaxMan * 10000;
+  const initialCostYen = propertyYen * initialCostRate / 100;
+  const months         = loanYears * 12;
 
   // ラベル更新
-  $('loanYearsVal').textContent = loanYears;
+  $('loanYearsVal').textContent  = loanYears;
   $('principalBadge').textContent = `借入額 ${principalMan.toLocaleString('ja-JP')} 万円`;
 
-  // 借入額0チェック
   $('zeroAlert').style.display = principal <= 0 ? '' : 'none';
   if (principal <= 0) return;
 
-  // 月々返済額
-  const monthlyLoan  = calcMonthlyPayment(principal, annualRate, months);
-  const monthlyBuy   = monthlyLoan + mgmtYen + propTaxYen / 12;
-  const monthlyRent  = monthlyRentMan * 10000;
-  const renewalAnnual = renewalMonths > 0
-    ? (monthlyRent * renewalMonths) / renewalInterval / 12
-    : 0;
-  const monthlyRentTotal = monthlyRent + renewalAnnual;
+  // ── ① 月々の支払い ──────────────────────────────────────
+  const monthlyLoan     = calcMonthlyPayment(principal, annualRate, months);
+  const monthlyTotal    = monthlyLoan + mgmtYen + propTaxYen / 12;
+  const totalLoanPay    = monthlyLoan * months;
+  const totalInterest   = totalLoanPay - principal;
 
-  // 月々コスト比較 更新
-  $('cLoan').textContent     = fmt(monthlyLoan);
-  $('cMgmt').textContent     = fmt(mgmtYen);
-  $('cTax').textContent      = fmt(propTaxYen / 12);
-  $('cBuyTotal').textContent = fmt(monthlyBuy);
-  $('cRent').textContent     = fmt(monthlyRent);
-  $('cRenewal').textContent  = fmt(renewalAnnual);
-  $('cRentTotal').textContent= fmt(monthlyRentTotal);
+  $('kpiLoan').textContent        = fmt(monthlyLoan);
+  $('kpiMgmt').textContent        = fmt(mgmtYen);
+  $('kpiTax').textContent         = fmt(propTaxYen / 12);
+  $('kpiMonthlyTotal').textContent= fmt(monthlyTotal);
+  $('summaryPrincipal').textContent = fmt(principal);
+  $('summaryInterest').textContent  = fmt(totalInterest);
+  $('summaryTotal').textContent     = fmt(totalLoanPay);
 
-  // 年次データ
-  const years = Array.from({ length: loanYears + 1 }, (_, i) => i);
-  const balances = buildYearlyBalances(principal, annualRate, loanYears);
+  // ── 年次データ構築 ────────────────────────────────────────
+  const years      = Array.from({ length: loanYears + 1 }, (_, i) => i);
+  const yearlyData = buildYearlyData(principal, annualRate, loanYears);
 
-  const assetValues  = years.map(y => propertyYen * Math.pow(1 + assetRate / 100, y));
+  // 資産価値・残債
+  const assetValues = years.map(y => propertyYen * Math.pow(1 + assetRate / 100, y));
+  const balances    = years.map(y => yearlyData[y].balance);
+  const cumInterests= years.map(y => yearlyData[y].cumInterest);
 
-  // 購入実質損益（売却想定）
-  // 累積利息は年次で近似（精度より軽量化優先）
-  const cumInterests = years.map(y => {
-    const totalPaid = monthlyLoan * y * 12;
-    const principalRepaid = principal - balances[y];
-    return Math.max(totalPaid - principalRepaid, 0);
-  });
-
+  // ── ② 累積コスト比較チャート用データ ────────────────────────
+  // 購入実質損益（売却想定）= 資産価値 − 物件価格 − 初期費用 − 累積利息 − 累積管理費 − 累積固定資産税 − 売却費用
   const buyNetValues = years.map(y => {
     const sellCost = assetValues[y] * sellCostRate / 100;
     return assetValues[y]
@@ -125,15 +122,16 @@ function update() {
   });
 
   // 賃貸累積支出（マイナス値）
-  const cumRentByYear = { 0: 0 };
+  const rentYen = monthlyRentMan * 10000;
   let cumRent = 0;
+  const cumRentByYear = [0]; // index=year
   for (let y = 1; y <= loanYears; y++) {
-    const base = monthlyRent * Math.pow(1 + rentIncreaseRate / 100, y - 1);
+    const base = rentYen * Math.pow(1 + rentIncreaseRate / 100, y - 1);
     cumRent += base * 12;
     if (renewalMonths > 0 && y % renewalInterval === 0) cumRent += base * renewalMonths;
-    cumRentByYear[y] = cumRent;
+    cumRentByYear.push(cumRent);
   }
-  const rentNegValues = years.map(y => -(cumRentByYear[y] ?? 0));
+  const rentNegValues = cumRentByYear.map(v => -v);
 
   // 損益分岐点
   let crossoverYear = null;
@@ -141,29 +139,50 @@ function update() {
     if (buyNetValues[i] - rentNegValues[i] >= 0) { crossoverYear = i; break; }
   }
 
-  // ヒーローカード更新
-  if (crossoverYear !== null) {
-    $('heroCrossover').textContent = `${crossoverYear}年目〜`;
-    $('heroSub').textContent = `${crossoverYear}年以降に売却すると、賃貸より有利になります`;
-  } else {
-    $('heroCrossover').textContent = '期間内なし';
-    $('heroSub').textContent = `${loanYears}年の返済期間内に購入が賃貸を上回ることはありません`;
-  }
+  // 損益分岐点表示
+  $('crossoverVal').textContent = crossoverYear !== null ? `${crossoverYear}年目〜` : '期間内なし';
 
-  // グラフ説明文
   const rateSign = rentIncreaseRate >= 0 ? '+' : '';
   $('chartDesc').textContent =
-    `購入実質損益 ＝ 資産価値 − 物件価格 − 諸費用 − 累積利息 − 累積管理費 − 累積固定資産税 − 売却費用　／　` +
-    `賃貸累積支出 ＝ 月額賃料（上昇率 ${rateSign}${rentIncreaseRate}%/年）＋ 更新料 ${renewalMonths}ヶ月分/${renewalInterval}年ごと`;
+    `賃貸条件: 月額${monthlyRentMan}万円 / 上昇率${rateSign}${rentIncreaseRate}%/年 / 更新料${renewalMonths}ヶ月分×${renewalInterval}年ごと　　` +
+    `購入条件: 資産価値${assetRate >= 0 ? '+' : ''}${assetRate}%/年 / 売却費用率${sellCostRate}%`;
 
-  // チャート更新
   renderChart(years, buyNetValues, rentNegValues, crossoverYear);
 
-  // テーブル更新
-  renderTable(years, assetValues, balances, buyNetValues, rentNegValues, crossoverYear);
+  // ── ③ 売却年別・実質月々コスト比較テーブル ───────────────────
+  //
+  // 購入の実質月々コスト（Y年後売却想定）
+  //   = （総支払額 − 売却で回収した額） ÷ 居住月数
+  //   総支払額 = 頭金 + 初期費用 + ローン返済累計(Y年分) + 管理費累計 + 固定資産税累計 + 売却費用
+  //   売却回収 = 資産価値(Y年後)
+  //   ※ 頭金 + ローン返済累計(Y年分) = downPayment×10000 + monthlyLoan×Y×12
+  //      = (propertyYen - principal) + monthlyLoan×Y×12
+  //
+  // 賃貸の月々平均コスト（Y年間）
+  //   = 賃貸累積支出(Y年) ÷ (Y × 12)
+
+  const tableRows = years.filter(y => y > 0).map(y => {
+    const downPaymentYen = downPaymentMan * 10000;
+    const loanRepaidTotal = monthlyLoan * y * 12; // ローン返済累計（元金＋利息）
+    const sellCost = assetValues[y] * sellCostRate / 100;
+
+    const totalOut = downPaymentYen + initialCostYen + loanRepaidTotal
+      + mgmtYen * 12 * y + propTaxYen * y + sellCost;
+    const totalIn  = assetValues[y];
+    const netCost  = totalOut - totalIn;
+    const buyMonthlyCost = netCost / (y * 12);
+
+    const rentMonthlyCost = cumRentByYear[y] / (y * 12);
+    const diff = buyMonthlyCost - rentMonthlyCost;
+    const isCrossover = y === crossoverYear;
+
+    return { y, buyMonthlyCost, rentMonthlyCost, diff, assetValues, balances, isCrossover };
+  });
+
+  renderTable(tableRows, assetValues, balances);
 }
 
-// ── チャート ─────────────────────────────────────────────────
+// ── チャート描画 ─────────────────────────────────────────────
 function renderChart(years, buyNet, rentNeg, crossoverYear) {
   if (mainChart) mainChart.destroy();
 
@@ -176,16 +195,16 @@ function renderChart(years, buyNet, rentNeg, crossoverYear) {
           label: '購入 実質損益（売却想定）',
           data: buyNet,
           borderColor: '#1565C0',
-          backgroundColor: 'rgba(21,101,192,0.07)',
+          backgroundColor: 'rgba(21,101,192,0.06)',
           borderWidth: 2.5,
           pointRadius: 2,
           fill: false,
         },
         {
-          label: '賃貸 累積支出（マイナス表示）',
+          label: '賃貸 累積支出（マイナス値）',
           data: rentNeg,
           borderColor: '#E65100',
-          backgroundColor: 'rgba(230,81,0,0.07)',
+          backgroundColor: 'rgba(230,81,0,0.06)',
           borderWidth: 2.5,
           pointRadius: 2,
           fill: false,
@@ -203,33 +222,15 @@ function renderChart(years, buyNet, rentNeg, crossoverYear) {
         },
         tooltip: {
           callbacks: {
-            label: ctx => `${ctx.dataset.label}: ¥${Math.round(ctx.raw).toLocaleString('ja-JP')}`,
+            label: ctx =>
+              `${ctx.dataset.label}: ¥${Math.round(ctx.raw).toLocaleString('ja-JP')}`,
             afterBody: items => {
+              if (items.length < 2) return [];
               const diff = (items[0]?.raw ?? 0) - (items[1]?.raw ?? 0);
               return [`差（購入−賃貸）: ¥${Math.round(diff).toLocaleString('ja-JP')}`];
             },
           },
         },
-        annotation: crossoverYear !== null ? {
-          annotations: {
-            crossLine: {
-              type: 'line',
-              scaleID: 'x',
-              value: crossoverYear,
-              borderColor: '#43A047',
-              borderWidth: 2,
-              borderDash: [6, 4],
-              label: {
-                display: true,
-                content: `損益分岐 ${crossoverYear}年`,
-                position: 'start',
-                backgroundColor: '#43A047',
-                color: '#fff',
-                font: { size: 11 },
-              },
-            },
-          },
-        } : {},
       },
       scales: {
         x: {
@@ -243,27 +244,55 @@ function renderChart(years, buyNet, rentNeg, crossoverYear) {
       },
     },
   });
+
+  // 損益分岐点に縦線を追加（アノテーション不要・シンプルにプラグインで対応）
+  if (crossoverYear !== null) {
+    const plugin = {
+      id: 'crossoverLine',
+      afterDraw(chart) {
+        const { ctx, scales: { x, y: yScale } } = chart;
+        const xPos = x.getPixelForValue(crossoverYear);
+        ctx.save();
+        ctx.strokeStyle = '#43A047';
+        ctx.lineWidth   = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(xPos, yScale.top);
+        ctx.lineTo(xPos, yScale.bottom);
+        ctx.stroke();
+        ctx.fillStyle  = '#43A047';
+        ctx.font       = 'bold 11px sans-serif';
+        ctx.textAlign  = 'left';
+        ctx.fillText(`${crossoverYear}年`, xPos + 4, yScale.top + 14);
+        ctx.restore();
+      },
+    };
+    // 既存プラグインを置き換え（複数回呼ばれても1つだけ）
+    const existIdx = mainChart.config.plugins?.findIndex(p => p.id === 'crossoverLine') ?? -1;
+    if (existIdx >= 0) mainChart.config.plugins[existIdx] = plugin;
+    else (mainChart.config.plugins ??= []).push(plugin);
+    mainChart.update();
+  }
 }
 
-// ── テーブル ─────────────────────────────────────────────────
-function renderTable(years, assetValues, balances, buyNet, rentNeg, crossoverYear) {
-  const tbody = $('yearTable').querySelector('tbody');
-  tbody.innerHTML = years.map(y => {
-    const diff = buyNet[y] - rentNeg[y];
-    const isCross = y === crossoverYear;
+// ── テーブル描画 ─────────────────────────────────────────────
+function renderTable(rows, assetValues, balances) {
+  const tbody = $('costTable').querySelector('tbody');
+  tbody.innerHTML = rows.map(({ y, buyMonthlyCost, rentMonthlyCost, diff, isCrossover }) => {
+    const diffClass = diff <= 0 ? 'pos' : 'neg'; // 購入コストが低い=お得=pos
     return `
-      <tr class="${isCross ? 'crossover' : ''}">
-        <td>${y}年</td>
+      <tr class="${isCrossover ? 'crossover-row' : ''}">
+        <td>${y}年後</td>
+        <td class="${diff <= 0 ? 'pos' : ''}">${fmt(buyMonthlyCost)}</td>
+        <td>${fmt(rentMonthlyCost)}</td>
+        <td class="${diffClass}">${fmt(diff)}</td>
         <td>${fmt(assetValues[y])}</td>
         <td>${fmt(balances[y])}</td>
-        <td class="${buyNet[y] >= 0 ? 'positive' : 'negative'}">${fmt(buyNet[y])}</td>
-        <td class="negative">${fmt(rentNeg[y])}</td>
-        <td class="${diff >= 0 ? 'positive' : 'negative'}">${fmt(diff)}</td>
       </tr>`;
   }).join('');
 }
 
-// ── イベント ─────────────────────────────────────────────────
+// ── イベントリスナー ─────────────────────────────────────────
 document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
 
 $('sidebarToggle').addEventListener('click', () => {
@@ -276,7 +305,6 @@ $('propertyPrice').addEventListener('input', () => {
   const max = parseFloat($('propertyPrice').value) || 100000;
   $('downPayment').max = max;
   if (parseFloat($('downPayment').value) > max) $('downPayment').value = max;
-  update();
 });
 
 // ── 初期描画 ──────────────────────────────────────────────────
