@@ -203,27 +203,67 @@
         <span class="ad-label">Ad</span>
       </div>
 
-      <!-- ③ 売却年別・実質月々コスト比較 ─────────── -->
-      <section class="card">
-        <h2 class="card-title">売却年別の実質月々コスト比較</h2>
+      <!-- ③ 売却年シミュレーター ─────────────────── -->
+      <section class="card" id="sellYearSection">
+        <h2 class="card-title">売却年シミュレーター</h2>
         <p class="card-desc">
-          「X年後に売却した場合」を想定した、購入と賃貸それぞれの実質的な月々コストを比較します。<br>
-          購入の実質月々コスト ＝ （総支払額 − 売却価格）÷ 居住月数
+          スライダーで売却年を選ぶと、その時点の売却益と月々の実質コスト比較を表示します。
         </p>
-        <div class="table-scroll">
-          <table class="data-table" id="costTable">
-            <thead>
-              <tr>
-                <th>売却年</th>
-                <th>購入<br><small>実質月々コスト</small></th>
-                <th>賃貸<br><small>月々平均コスト</small></th>
-                <th>差<br><small>購入−賃貸</small></th>
-                <th>資産価値</th>
-                <th>残債</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+
+        <!-- 年スライダー -->
+        <div class="year-selector">
+          <input type="range" id="sellYear" min="1" max="35" value="10" step="1">
+          <div class="year-label">
+            購入から <strong id="sellYearVal">10</strong> 年後に売却
+          </div>
+        </div>
+
+        <!-- 売却結果 + 月々コスト比較 -->
+        <div class="year-detail" id="yearDetail">
+
+          <!-- 売却結果 -->
+          <div class="detail-block">
+            <div class="detail-block-title">売却結果</div>
+            <div class="detail-rows">
+              <div class="detail-row">
+                <span>資産価値</span>
+                <strong id="dAssetValue">—</strong>
+              </div>
+              <div class="detail-row">
+                <span>残債</span>
+                <strong id="dBalance">—</strong>
+              </div>
+              <div class="detail-row">
+                <span>売却費用</span>
+                <strong id="dSellCost">—</strong>
+              </div>
+              <div class="detail-row total">
+                <span>売却純益（資産価値 − 残債 − 売却費用）</span>
+                <strong id="dSellGain">—</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 月々コスト比較 -->
+          <div class="detail-block">
+            <div class="detail-block-title">月々の実質コスト比較（居住期間全体の平均）</div>
+            <p class="detail-note">購入の実質月々コスト ＝ （総支払額 − 売却価格）÷ 居住月数</p>
+            <div class="cost-versus">
+              <div class="cv-col cv-buy">
+                <div class="cv-head">購入</div>
+                <div class="cv-value" id="dBuyCost">—</div>
+                <div class="cv-sub">実質月々コスト</div>
+              </div>
+              <div class="cv-sep">VS</div>
+              <div class="cv-col cv-rent">
+                <div class="cv-head">賃貸</div>
+                <div class="cv-value" id="dRentCost">—</div>
+                <div class="cv-sub">月々平均コスト</div>
+              </div>
+            </div>
+            <div class="verdict" id="dVerdict">—</div>
+          </div>
+
         </div>
       </section>
 

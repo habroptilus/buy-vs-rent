@@ -336,6 +336,132 @@ body {
   color: var(--green);
 }
 
+/* ── Year selector ──────────────────────────────────── */
+.year-selector {
+  margin-bottom: 20px;
+}
+.year-selector input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+  height: 6px;
+  margin-bottom: 8px;
+}
+.year-label {
+  text-align: center;
+  font-size: 15px;
+  color: var(--muted);
+}
+.year-label strong {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--primary);
+  margin: 0 2px;
+}
+
+/* ── Year detail ────────────────────────────────────── */
+.year-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.detail-block {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.detail-block-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.detail-rows { display: flex; flex-direction: column; gap: 6px; }
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-row span { color: var(--muted); }
+.detail-row strong { font-weight: 700; }
+.detail-row.total {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+}
+.detail-row.total span { color: var(--text); font-weight: 600; }
+.detail-row.total strong { font-size: 16px; }
+strong.pos { color: var(--green); }
+strong.neg { color: var(--red); }
+
+.detail-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+/* ── Cost versus ────────────────────────────────────── */
+.cost-versus {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 12px;
+}
+.cv-col {
+  flex: 1;
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.cv-buy  { background: var(--primary-light); border: 1.5px solid #90CAF9; }
+.cv-rent { background: #FFF3E0; border: 1.5px solid #FFCC80; }
+.cv-sep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.cv-head {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+.cv-buy  .cv-head { color: var(--primary); }
+.cv-rent .cv-head { color: var(--orange); }
+.cv-value {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.cv-buy  .cv-value { color: var(--primary-dark); }
+.cv-rent .cv-value { color: var(--orange); }
+.cv-sub { font-size: 10px; color: var(--muted); }
+
+/* ── Verdict ────────────────────────────────────────── */
+.verdict {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+.verdict.buy-wins  { background: var(--primary-light); color: var(--primary-dark); }
+.verdict.rent-wins { background: #FFF3E0; color: var(--orange); }
+.verdict.even      { background: #F3F4F6; color: var(--muted); }
+
 /* ── Footer ─────────────────────────────────────────── */
 .site-footer {
   background: #263238;
@@ -367,4 +493,7 @@ body {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .loan-summary { gap: 16px; }
   .chart-wrap { height: 220px; }
+  .year-detail { grid-template-columns: 1fr; }
+  .cost-versus { flex-direction: column; gap: 8px; }
+  .cv-sep { width: 100%; height: 24px; }
 }

@@ -1,6 +1,9 @@
 'use strict';
 
 let mainChart = null;
+// 計算済みデータをキャッシュ（年スライダーが参照する）
+let calcCache = null;
+
 const $ = id => document.getElementById(id);
 
 // ── フォーマット ────────────────────────────────────────────
@@ -21,11 +24,9 @@ function calcMonthlyPayment(principal, annualRate, months) {
   return principal * r * pow / (pow - 1);
 }
 
-// ── 月次返済スケジュールを年次サマリーに変換 ─────────────────
-// 戻り値: 配列[y] = { balance, cumInterest } (y=0..loanYears)
+// ── 年次残高・累積利息を計算 ─────────────────────────────────
 function buildYearlyData(principal, annualRate, loanYears) {
   const result = [{ balance: principal, cumInterest: 0 }];
-
   if (annualRate === 0) {
     const monthly = principal / (loanYears * 12);
     let bal = principal;
@@ -50,20 +51,18 @@ function buildYearlyData(principal, annualRate, loanYears) {
   return result;
 }
 
-// ── メイン計算 ───────────────────────────────────────────────
+// ── メイン計算（入力変更時に呼ばれる）──────────────────────
 function update() {
   // 入力値取得
   const propertyPriceMan = parseFloat($('propertyPrice').value)    || 5000;
   const downPaymentMan   = parseFloat($('downPayment').value)      || 0;
   const annualRate       = parseFloat($('annualRate').value)       || 0;
   const loanYears        = parseInt($('loanYears').value)          || 35;
-
   const initialCostRate  = parseFloat($('initialCostRate').value)  || 6;
   const monthlyMgmtMan   = parseFloat($('monthlyMgmt').value)      || 0;
   const propertyTaxMan   = parseFloat($('propertyTax').value)      || 0;
   const sellCostRate     = parseFloat($('sellCostRate').value)     || 4;
   const assetRate        = parseFloat($('assetRate').value)        || 0;
-
   const monthlyRentMan   = parseFloat($('monthlyRent').value)      || 15;
   const rentIncreaseRate = parseFloat($('rentIncreaseRate').value) || 0;
   const renewalMonths    = parseFloat($('renewalMonths').value)    || 1;
@@ -73,43 +72,43 @@ function update() {
   const principalMan   = Math.max(propertyPriceMan - downPaymentMan, 0);
   const principal      = principalMan * 10000;
   const propertyYen    = propertyPriceMan * 10000;
+  const downPaymentYen = downPaymentMan * 10000;
   const mgmtYen        = monthlyMgmtMan * 10000;
   const propTaxYen     = propertyTaxMan * 10000;
   const initialCostYen = propertyYen * initialCostRate / 100;
   const months         = loanYears * 12;
+  const rentYen        = monthlyRentMan * 10000;
 
   // ラベル更新
-  $('loanYearsVal').textContent  = loanYears;
+  $('loanYearsVal').textContent   = loanYears;
   $('principalBadge').textContent = `借入額 ${principalMan.toLocaleString('ja-JP')} 万円`;
 
   $('zeroAlert').style.display = principal <= 0 ? '' : 'none';
   if (principal <= 0) return;
 
-  // ── ① 月々の支払い ──────────────────────────────────────
-  const monthlyLoan     = calcMonthlyPayment(principal, annualRate, months);
-  const monthlyTotal    = monthlyLoan + mgmtYen + propTaxYen / 12;
-  const totalLoanPay    = monthlyLoan * months;
-  const totalInterest   = totalLoanPay - principal;
+  // ── ① 月々の支払い ─────────────────────────────────────
+  const monthlyLoan   = calcMonthlyPayment(principal, annualRate, months);
+  const monthlyTotal  = monthlyLoan + mgmtYen + propTaxYen / 12;
+  const totalLoanPay  = monthlyLoan * months;
+  const totalInterest = totalLoanPay - principal;
 
-  $('kpiLoan').textContent        = fmt(monthlyLoan);
-  $('kpiMgmt').textContent        = fmt(mgmtYen);
-  $('kpiTax').textContent         = fmt(propTaxYen / 12);
-  $('kpiMonthlyTotal').textContent= fmt(monthlyTotal);
-  $('summaryPrincipal').textContent = fmt(principal);
-  $('summaryInterest').textContent  = fmt(totalInterest);
-  $('summaryTotal').textContent     = fmt(totalLoanPay);
+  $('kpiLoan').textContent         = fmt(monthlyLoan);
+  $('kpiMgmt').textContent         = fmt(mgmtYen);
+  $('kpiTax').textContent          = fmt(propTaxYen / 12);
+  $('kpiMonthlyTotal').textContent = fmt(monthlyTotal);
+  $('summaryPrincipal').textContent= fmt(principal);
+  $('summaryInterest').textContent = fmt(totalInterest);
+  $('summaryTotal').textContent    = fmt(totalLoanPay);
 
-  // ── 年次データ構築 ────────────────────────────────────────
+  // ── 年次データ ──────────────────────────────────────────
   const years      = Array.from({ length: loanYears + 1 }, (_, i) => i);
   const yearlyData = buildYearlyData(principal, annualRate, loanYears);
-
-  // 資産価値・残債
   const assetValues = years.map(y => propertyYen * Math.pow(1 + assetRate / 100, y));
   const balances    = years.map(y => yearlyData[y].balance);
   const cumInterests= years.map(y => yearlyData[y].cumInterest);
 
-  // ── ② 累積コスト比較チャート用データ ────────────────────────
-  // 購入実質損益（売却想定）= 資産価値 − 物件価格 − 初期費用 − 累積利息 − 累積管理費 − 累積固定資産税 − 売却費用
+  // ── ② チャート用データ ─────────────────────────────────
+  // 購入実質損益（売却想定）
   const buyNetValues = years.map(y => {
     const sellCost = assetValues[y] * sellCostRate / 100;
     return assetValues[y]
@@ -122,9 +121,8 @@ function update() {
   });
 
   // 賃貸累積支出（マイナス値）
-  const rentYen = monthlyRentMan * 10000;
+  const cumRentByYear = [0];
   let cumRent = 0;
-  const cumRentByYear = [0]; // index=year
   for (let y = 1; y <= loanYears; y++) {
     const base = rentYen * Math.pow(1 + rentIncreaseRate / 100, y - 1);
     cumRent += base * 12;
@@ -138,56 +136,160 @@ function update() {
   for (let i = 0; i < years.length; i++) {
     if (buyNetValues[i] - rentNegValues[i] >= 0) { crossoverYear = i; break; }
   }
-
-  // 損益分岐点表示
   $('crossoverVal').textContent = crossoverYear !== null ? `${crossoverYear}年目〜` : '期間内なし';
 
   const rateSign = rentIncreaseRate >= 0 ? '+' : '';
   $('chartDesc').textContent =
-    `賃貸条件: 月額${monthlyRentMan}万円 / 上昇率${rateSign}${rentIncreaseRate}%/年 / 更新料${renewalMonths}ヶ月分×${renewalInterval}年ごと　　` +
-    `購入条件: 資産価値${assetRate >= 0 ? '+' : ''}${assetRate}%/年 / 売却費用率${sellCostRate}%`;
+    `賃貸: 月額${monthlyRentMan}万円 / 上昇率${rateSign}${rentIncreaseRate}%/年 / 更新料${renewalMonths}ヶ月分×${renewalInterval}年ごと　` +
+    `購入: 資産価値${assetRate >= 0 ? '+' : ''}${assetRate}%/年 / 売却費用率${sellCostRate}%`;
 
-  renderChart(years, buyNetValues, rentNegValues, crossoverYear);
+  // ── キャッシュ保存 ─────────────────────────────────────
+  calcCache = {
+    loanYears,
+    monthlyLoan,
+    downPaymentYen,
+    initialCostYen,
+    mgmtYen,
+    propTaxYen,
+    sellCostRate,
+    assetValues,
+    balances,
+    cumRentByYear,
+    buyNetValues,
+    rentNegValues,
+    crossoverYear,
+  };
 
-  // ── ③ 売却年別・実質月々コスト比較テーブル ───────────────────
-  //
-  // 購入の実質月々コスト（Y年後売却想定）
-  //   = （総支払額 − 売却で回収した額） ÷ 居住月数
-  //   総支払額 = 頭金 + 初期費用 + ローン返済累計(Y年分) + 管理費累計 + 固定資産税累計 + 売却費用
-  //   売却回収 = 資産価値(Y年後)
-  //   ※ 頭金 + ローン返済累計(Y年分) = downPayment×10000 + monthlyLoan×Y×12
-  //      = (propertyYen - principal) + monthlyLoan×Y×12
-  //
-  // 賃貸の月々平均コスト（Y年間）
-  //   = 賃貸累積支出(Y年) ÷ (Y × 12)
+  // 年スライダーの max を返済期間に合わせる
+  const slider = $('sellYear');
+  slider.max = loanYears;
+  if (parseInt(slider.value) > loanYears) slider.value = loanYears;
 
-  const tableRows = years.filter(y => y > 0).map(y => {
-    const downPaymentYen = downPaymentMan * 10000;
-    const loanRepaidTotal = monthlyLoan * y * 12; // ローン返済累計（元金＋利息）
-    const sellCost = assetValues[y] * sellCostRate / 100;
+  renderChart(years, buyNetValues, rentNegValues, parseInt(slider.value));
+  updateYearDetail(parseInt(slider.value));
+}
 
-    const totalOut = downPaymentYen + initialCostYen + loanRepaidTotal
-      + mgmtYen * 12 * y + propTaxYen * y + sellCost;
-    const totalIn  = assetValues[y];
-    const netCost  = totalOut - totalIn;
-    const buyMonthlyCost = netCost / (y * 12);
+// ── 年スライダーで詳細を更新 ────────────────────────────────
+function updateYearDetail(year) {
+  if (!calcCache) return;
 
-    const rentMonthlyCost = cumRentByYear[y] / (y * 12);
-    const diff = buyMonthlyCost - rentMonthlyCost;
-    const isCrossover = y === crossoverYear;
+  const {
+    monthlyLoan, downPaymentYen, initialCostYen,
+    mgmtYen, propTaxYen, sellCostRate,
+    assetValues, balances, cumRentByYear,
+    crossoverYear,
+  } = calcCache;
 
-    return { y, buyMonthlyCost, rentMonthlyCost, diff, assetValues, balances, isCrossover };
-  });
+  $('sellYearVal').textContent = year;
 
-  renderTable(tableRows, assetValues, balances);
+  const assetVal  = assetValues[year];
+  const balance   = balances[year];
+  const sellCost  = assetVal * sellCostRate / 100;
+  const sellGain  = assetVal - balance - sellCost; // 純売却益（残債を返済後に手元に残るか）
+
+  // 購入の実質月々コスト
+  // 総支払い = 頭金 + 初期費用 + ローン返済累計 + 管理費累計 + 固定資産税累計 + 売却費用
+  // 総回収   = 売却価格（資産価値）
+  const totalOut     = downPaymentYen + initialCostYen
+    + monthlyLoan * year * 12
+    + mgmtYen * 12 * year
+    + propTaxYen * year
+    + sellCost;
+  const netCost      = totalOut - assetVal;
+  const buyMonthly   = netCost / (year * 12);
+  const rentMonthly  = cumRentByYear[year] / (year * 12);
+  const diff         = buyMonthly - rentMonthly;
+
+  // 売却結果
+  $('dAssetValue').textContent = fmt(assetVal);
+  $('dBalance').textContent    = fmt(balance);
+  $('dSellCost').textContent   = fmt(sellCost);
+
+  const gainEl = $('dSellGain');
+  gainEl.textContent  = fmt(sellGain);
+  gainEl.className    = sellGain >= 0 ? 'pos' : 'neg';
+
+  // 月々コスト
+  $('dBuyCost').textContent  = fmt(buyMonthly);
+  $('dRentCost').textContent = fmt(rentMonthly);
+
+  // 判定
+  const verdictEl = $('dVerdict');
+  if (Math.abs(diff) < 500) {
+    verdictEl.textContent = `ほぼ同等（差: ${fmt(Math.abs(diff))}）`;
+    verdictEl.className   = 'verdict even';
+  } else if (diff < 0) {
+    verdictEl.textContent = `購入の方が月々 ${fmt(Math.abs(diff))} お得`;
+    verdictEl.className   = 'verdict buy-wins';
+  } else {
+    verdictEl.textContent = `賃貸の方が月々 ${fmt(diff)} お得`;
+    verdictEl.className   = 'verdict rent-wins';
+  }
+
+  // チャートの選択年ラインを更新
+  if (mainChart) {
+    mainChart._selectedYear = year;
+    mainChart.update('none'); // アニメーションなし
+  }
 }
 
 // ── チャート描画 ─────────────────────────────────────────────
-function renderChart(years, buyNet, rentNeg, crossoverYear) {
+function renderChart(years, buyNet, rentNeg, selectedYear) {
   if (mainChart) mainChart.destroy();
+
+  // 選択年ライン + 損益分岐ラインを描くカスタムプラグイン
+  const overlayPlugin = {
+    id: 'overlay',
+    afterDraw(chart) {
+      const { ctx, scales: { x, y: yScale } } = chart;
+      const sel      = chart._selectedYear ?? selectedYear;
+      const crossover = calcCache?.crossoverYear ?? null;
+
+      // 選択年ライン（オレンジ）
+      if (sel != null && sel >= 0) {
+        const xPos = x.getPixelForValue(sel);
+        ctx.save();
+        ctx.strokeStyle = '#FF6F00';
+        ctx.lineWidth   = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(xPos, yScale.top);
+        ctx.lineTo(xPos, yScale.bottom);
+        ctx.stroke();
+        const label = `${sel}年`;
+        ctx.font = 'bold 11px sans-serif';
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle = '#FF6F00';
+        ctx.fillRect(xPos - tw / 2 - 4, yScale.bottom + 4, tw + 8, 16);
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, xPos, yScale.bottom + 15);
+        ctx.restore();
+      }
+
+      // 損益分岐ライン（緑）
+      if (crossover != null) {
+        const xPos = x.getPixelForValue(crossover);
+        ctx.save();
+        ctx.strokeStyle = '#2E7D32';
+        ctx.lineWidth   = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(xPos, yScale.top);
+        ctx.lineTo(xPos, yScale.bottom);
+        ctx.stroke();
+        ctx.fillStyle = '#2E7D32';
+        ctx.font      = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`分岐 ${crossover}年`, xPos + 4, yScale.top + 14);
+        ctx.restore();
+      }
+    },
+  };
 
   mainChart = new Chart($('mainChart').getContext('2d'), {
     type: 'line',
+    plugins: [overlayPlugin],
     data: {
       labels: years,
       datasets: [
@@ -245,55 +347,22 @@ function renderChart(years, buyNet, rentNeg, crossoverYear) {
     },
   });
 
-  // 損益分岐点に縦線を追加（アノテーション不要・シンプルにプラグインで対応）
-  if (crossoverYear !== null) {
-    const plugin = {
-      id: 'crossoverLine',
-      afterDraw(chart) {
-        const { ctx, scales: { x, y: yScale } } = chart;
-        const xPos = x.getPixelForValue(crossoverYear);
-        ctx.save();
-        ctx.strokeStyle = '#43A047';
-        ctx.lineWidth   = 1.5;
-        ctx.setLineDash([6, 4]);
-        ctx.beginPath();
-        ctx.moveTo(xPos, yScale.top);
-        ctx.lineTo(xPos, yScale.bottom);
-        ctx.stroke();
-        ctx.fillStyle  = '#43A047';
-        ctx.font       = 'bold 11px sans-serif';
-        ctx.textAlign  = 'left';
-        ctx.fillText(`${crossoverYear}年`, xPos + 4, yScale.top + 14);
-        ctx.restore();
-      },
-    };
-    // 既存プラグインを置き換え（複数回呼ばれても1つだけ）
-    const existIdx = mainChart.config.plugins?.findIndex(p => p.id === 'crossoverLine') ?? -1;
-    if (existIdx >= 0) mainChart.config.plugins[existIdx] = plugin;
-    else (mainChart.config.plugins ??= []).push(plugin);
-    mainChart.update();
-  }
-}
-
-// ── テーブル描画 ─────────────────────────────────────────────
-function renderTable(rows, assetValues, balances) {
-  const tbody = $('costTable').querySelector('tbody');
-  tbody.innerHTML = rows.map(({ y, buyMonthlyCost, rentMonthlyCost, diff, isCrossover }) => {
-    const diffClass = diff <= 0 ? 'pos' : 'neg'; // 購入コストが低い=お得=pos
-    return `
-      <tr class="${isCrossover ? 'crossover-row' : ''}">
-        <td>${y}年後</td>
-        <td class="${diff <= 0 ? 'pos' : ''}">${fmt(buyMonthlyCost)}</td>
-        <td>${fmt(rentMonthlyCost)}</td>
-        <td class="${diffClass}">${fmt(diff)}</td>
-        <td>${fmt(assetValues[y])}</td>
-        <td>${fmt(balances[y])}</td>
-      </tr>`;
-  }).join('');
+  mainChart._selectedYear = selectedYear;
 }
 
 // ── イベントリスナー ─────────────────────────────────────────
-document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
+document.querySelectorAll('input:not(#sellYear)').forEach(el =>
+  el.addEventListener('input', update)
+);
+
+$('sellYear').addEventListener('input', () => {
+  const year = parseInt($('sellYear').value);
+  updateYearDetail(year);
+  if (mainChart) {
+    mainChart._selectedYear = year;
+    mainChart.update('none');
+  }
+});
 
 $('sidebarToggle').addEventListener('click', () => {
   const body = $('sidebarBody');
