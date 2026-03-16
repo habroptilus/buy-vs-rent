@@ -185,10 +185,10 @@ function updateYearDetail(year) {
   const sellCost = assetVal * sellCostRate / 100;
   const sellGain = assetVal - balance - sellCost;
 
-  // 購入の実質損益を月数で割る（チャートのY値と同じ定義）
-  const buyMonthly  = buyNetValues[year] / (year * 12);
-  // 賃貸の月々平均コスト（正値＝支出）
-  const rentMonthly = cumRentByYear[year] / (year * 12);
+  // チャートの損益値（正=得・負=損）を月数で割り、符号を反転してコスト表示に
+  // 購入コスト = -(購入実質損益 / 月数)  正値=支出、負値=資産値上がりで利益
+  const buyCost  = -(buyNetValues[year] / (year * 12));
+  const rentCost = cumRentByYear[year] / (year * 12); // 常に正値（支出）
 
   // 売却結果
   $('dAssetValue').textContent = fmt(assetVal);
@@ -199,24 +199,23 @@ function updateYearDetail(year) {
   gainEl.textContent = fmt(sellGain);
   gainEl.className   = sellGain >= 0 ? 'pos' : 'neg';
 
-  // 月々損益表示（購入はプラス=得、マイナス=損）
+  // 月々コスト表示（両方とも「コスト」として正値で比較）
   const buyEl = $('dBuyCost');
-  buyEl.textContent = fmt(buyMonthly);
-  buyEl.className   = buyMonthly >= 0 ? 'pos' : 'neg';
-  $('dRentCost').textContent = fmt(rentMonthly);
+  buyEl.textContent = fmt(buyCost);
+  buyEl.className   = 'cv-value ' + (buyCost <= 0 ? 'pos' : '');
+  $('dRentCost').textContent = fmt(rentCost);
 
-  // 判定：購入の月割り損益 + 賃貸の月々コスト > 0 なら購入が有利
-  // （賃貸払いを免れた分 + 資産増減が、購入コストを上回るかどうか）
-  const advantage = buyMonthly + rentMonthly;
+  // 判定：buyCost < rentCost なら購入が有利
+  const diff      = buyCost - rentCost;
   const verdictEl = $('dVerdict');
-  if (Math.abs(advantage) < 500) {
-    verdictEl.textContent = `ほぼ同等（差: ${fmt(Math.abs(advantage))}）`;
+  if (Math.abs(diff) < 500) {
+    verdictEl.textContent = `ほぼ同等（差: ${fmt(Math.abs(diff))}）`;
     verdictEl.className   = 'verdict even';
-  } else if (advantage > 0) {
-    verdictEl.textContent = `購入の方が月々 ${fmt(advantage)} 有利`;
+  } else if (diff < 0) {
+    verdictEl.textContent = `購入の方が月々 ${fmt(Math.abs(diff))} お得`;
     verdictEl.className   = 'verdict buy-wins';
   } else {
-    verdictEl.textContent = `賃貸の方が月々 ${fmt(Math.abs(advantage))} 有利`;
+    verdictEl.textContent = `賃貸の方が月々 ${fmt(diff)} お得`;
     verdictEl.className   = 'verdict rent-wins';
   }
 
