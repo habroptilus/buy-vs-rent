@@ -1,0 +1,366 @@
+/* ── Variables ─────────────────────────────────────── */
+:root {
+  --buy:        #1565C0;
+  --buy-light:  #E3F2FD;
+  --rent:       #E65100;
+  --rent-light: #FFF3E0;
+  --green:      #2E7D32;
+  --red:        #C62828;
+  --text:       #1a1a1a;
+  --muted:      #6B7280;
+  --border:     #E5E7EB;
+  --bg:         #F3F4F6;
+  --card:       #FFFFFF;
+  --radius:     10px;
+  --sidebar-w:  280px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.site-header {
+  background: linear-gradient(135deg, #0D47A1, #1976D2);
+  color: #fff;
+}
+.header-inner {
+  padding: 16px 20px 12px;
+}
+.header-inner h1 {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+.header-sub {
+  font-size: 12px;
+  opacity: 0.78;
+  margin-top: 3px;
+}
+
+/* ── Ad slots ───────────────────────────────────────── */
+.ad-slot {
+  background: #fafafa;
+  border: 1px dashed #d1d5db;
+  border-radius: var(--radius);
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px 0;
+}
+.ad-header {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 0;
+  min-height: 60px;
+  margin: 0;
+}
+.ad-label {
+  font-size: 10px;
+  color: #9CA3AF;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+.layout {
+  display: flex;
+  min-height: calc(100vh - 100px);
+}
+
+/* ── Sidebar ─────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.sidebar-toggle {
+  display: none;
+  width: 100%;
+  padding: 13px 16px;
+  background: var(--buy);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.sidebar-body { padding: 16px; }
+
+.input-group {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.input-group:last-child { border-bottom: none; }
+.input-group h2 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--buy);
+  margin-bottom: 10px;
+}
+
+.field { margin-bottom: 9px; }
+.field label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.field input[type="number"],
+.field select {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input[type="number"]:focus {
+  outline: none;
+  border-color: var(--buy);
+  box-shadow: 0 0 0 3px rgba(21,101,192,0.1);
+}
+.field input[type="range"] {
+  width: 100%;
+  accent-color: var(--buy);
+  margin-top: 4px;
+}
+.range-val {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--buy);
+  font-size: 13px;
+}
+.field-badge {
+  display: inline-block;
+  background: var(--buy-light);
+  color: var(--buy);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  margin-bottom: 4px;
+}
+.tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: var(--muted);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+/* ── Main ───────────────────────────────────────────── */
+.main {
+  flex: 1;
+  padding: 16px 20px;
+  min-width: 0;
+}
+
+.alert {
+  background: #FEF3C7;
+  border: 1px solid #F59E0B;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  color: #92400E;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* ── Hero card ─────────────────────────────────────── */
+.hero-card {
+  background: linear-gradient(135deg, #0D47A1, #1976D2);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(13,71,161,0.25);
+}
+.hero-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.75;
+  margin-bottom: 4px;
+}
+.hero-value {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+.hero-sub {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 6px;
+}
+
+/* ── Cards ──────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.card-desc {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+/* ── Monthly cost compare ───────────────────────────── */
+.cost-compare {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+.cost-col {
+  flex: 1;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.cost-buy  { background: var(--buy-light);  border: 1.5px solid #90CAF9; }
+.cost-rent { background: var(--rent-light); border: 1.5px solid #FFCC80; }
+.cost-vs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.cost-head {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+.cost-buy .cost-head  { color: var(--buy); }
+.cost-rent .cost-head { color: var(--rent); }
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.cost-row:last-child { border-bottom: none; }
+.cost-row span { color: var(--muted); }
+.cost-row strong { font-weight: 700; color: var(--text); }
+.cost-row.total {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1.5px solid rgba(0,0,0,0.1);
+  border-bottom: none;
+}
+.cost-buy  .cost-row.total strong { color: var(--buy); font-size: 15px; }
+.cost-rent .cost-row.total strong { color: var(--rent); font-size: 15px; }
+
+/* ── Chart ──────────────────────────────────────────── */
+.chart-wrap {
+  position: relative;
+  height: 340px;
+}
+
+/* ── Table ──────────────────────────────────────────── */
+.table-scroll { overflow-x: auto; }
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.data-table th {
+  background: var(--buy);
+  color: #fff;
+  padding: 8px 12px;
+  text-align: right;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.data-table th:first-child { text-align: center; }
+.data-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+.data-table td:first-child { text-align: center; font-weight: 700; }
+.data-table tbody tr:hover  { background: var(--bg); }
+.data-table td.positive { color: var(--green); font-weight: 700; }
+.data-table td.negative { color: var(--red); }
+.data-table tbody tr.crossover { background: #E8F5E9; }
+
+/* ── Footer ─────────────────────────────────────────── */
+.site-footer {
+  background: #263238;
+  color: #90A4AE;
+  text-align: center;
+  padding: 14px;
+  font-size: 11px;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 780px) {
+  .layout { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    min-width: unset;
+    height: auto;
+    position: static;
+    overflow: visible;
+  }
+  .sidebar-toggle { display: block; }
+  .sidebar-body {
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+  .sidebar-body.open { display: block; }
+  .main { padding: 12px; }
+  .chart-wrap { height: 260px; }
+  .hero-value { font-size: 32px; }
+}
+
+@media (max-width: 480px) {
+  .cost-compare { flex-direction: column; }
+  .cost-vs { width: 100%; height: 28px; }
+  .chart-wrap { height: 220px; }
+}
